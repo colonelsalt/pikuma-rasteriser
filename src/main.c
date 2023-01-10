@@ -4,8 +4,18 @@
 #include <SDL.h>
 
 #include "display.h"
+#include "vector.h"
+
+#define NUM_POINTS 9 * 9 * 9
+vec3_t g_CubePoints[NUM_POINTS];
+
+vec2_t g_ProjectedPoints[NUM_POINTS];
 
 bool g_IsRunning = false;
+
+vec3_t g_CameraPos = { 0, 0, -5 };
+
+const float FOV_FACTOR = 640.0f;
 
 void setup(void)
 {
@@ -14,6 +24,19 @@ void setup(void)
 											 SDL_PIXELFORMAT_ARGB8888,
 											 SDL_TEXTUREACCESS_STREAMING,
 											 g_WindowWidth, g_WindowHeight);
+
+	int point_count = 0;
+	for (float x = -1; x <= 1; x += 0.25f)
+	{
+		for (float y = -1; y <= 1; y += 0.25f)
+		{
+			for (float z = -1; z <= 1; z += 0.25f)
+			{
+				vec3_t point = { .x = x, .y = y, .z = z };
+				g_CubePoints[point_count++] = point;
+			}
+		}
+	}
 
 }
 
@@ -34,18 +57,39 @@ void process_input(void)
 	}
 }
 
+vec2_t project(vec3_t point)
+{
+	vec2_t projected_point = {
+		.x = (FOV_FACTOR * point.x) / point.z,
+		.y = (FOV_FACTOR * point.y) / point.z
+	};
+	return projected_point;
+}
+
 void update(void)
 {
+	for (int i = 0; i < NUM_POINTS; i++)
+	{
+		vec3_t point = g_CubePoints[i];
+		point.z -= g_CameraPos.z;
 
+		vec2_t projected_point = project(point);
+		g_ProjectedPoints[i] = projected_point;
+	}
 }
 
 void render(void)
 {
-	SDL_SetRenderDrawColor(g_Renderer, 255, 0, 0, 255);
-	SDL_RenderClear(g_Renderer);
-
 	draw_grid();
-	draw_rect(200, 200, 800, 800, 0xFF00FF00);
+
+	for (int i = 0; i < NUM_POINTS; i++)
+	{
+		vec2_t p = g_ProjectedPoints[i];
+		draw_rect(p.x + (g_WindowWidth / 2),
+				  p.y + (g_WindowHeight / 2),
+				  4, 4,
+				  0xFFFFFF00);
+	}
 
 	render_color_buffer();
 	clear_color_buffer(0xFF000000);
@@ -58,6 +102,7 @@ int main(int argc, char* args[])
 	g_IsRunning = initialize_window();
 	
 	setup();
+
 	while (g_IsRunning)
 	{
 		process_input();
