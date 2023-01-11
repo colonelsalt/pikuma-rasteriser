@@ -14,6 +14,7 @@ vec2_t g_ProjectedPoints[NUM_POINTS];
 bool g_IsRunning = false;
 
 vec3_t g_CameraPos = { 0, 0, -5 };
+vec3_t g_CubeRotation = { 0, 0, 0 };
 
 const float FOV_FACTOR = 640.0f;
 
@@ -68,12 +69,21 @@ vec2_t project(vec3_t point)
 
 void update(void)
 {
+	g_CubeRotation.x += 0.005f;
+	g_CubeRotation.y += 0.005f;
+	g_CubeRotation.z += 0.005f;
+
 	for (int i = 0; i < NUM_POINTS; i++)
 	{
 		vec3_t point = g_CubePoints[i];
-		point.z -= g_CameraPos.z;
+		
+		vec3_t rotated_point = vec3_rotate_x(point, g_CubeRotation.x);
+		rotated_point = vec3_rotate_y(rotated_point, g_CubeRotation.y);
+		rotated_point = vec3_rotate_z(rotated_point, g_CubeRotation.z);
+		
+		rotated_point.z -= g_CameraPos.z;
 
-		vec2_t projected_point = project(point);
+		vec2_t projected_point = project(rotated_point);
 		g_ProjectedPoints[i] = projected_point;
 	}
 }
