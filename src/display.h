@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <SDL.h>
 
+#define FPS 30
+#define FRAME_TARGET_TIME (1000 / FPS)
+
 extern SDL_Window* g_Window;
 extern SDL_Renderer* g_Renderer;
 

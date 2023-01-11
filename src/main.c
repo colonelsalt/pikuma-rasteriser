@@ -13,6 +13,8 @@ vec2_t g_ProjectedPoints[NUM_POINTS];
 
 bool g_IsRunning = false;
 
+int g_PrevFrameTime = 0;
+
 vec3_t g_CameraPos = { 0, 0, -5 };
 vec3_t g_CubeRotation = { 0, 0, 0 };
 
@@ -69,9 +71,16 @@ vec2_t project(vec3_t point)
 
 void update(void)
 {
-	g_CubeRotation.x += 0.005f;
-	g_CubeRotation.y += 0.005f;
-	g_CubeRotation.z += 0.005f;
+	int time_to_sleep = FRAME_TARGET_TIME - (SDL_GetTicks() - g_PrevFrameTime);
+	if (time_to_sleep > 0 && time_to_sleep <= FRAME_TARGET_TIME)
+	{
+		SDL_Delay(time_to_sleep);
+	}
+	g_PrevFrameTime = SDL_GetTicks();
+
+	g_CubeRotation.x += 0.01f;
+	g_CubeRotation.y += 0.01f;
+	g_CubeRotation.z += 0.01f;
 
 	for (int i = 0; i < NUM_POINTS; i++)
 	{
