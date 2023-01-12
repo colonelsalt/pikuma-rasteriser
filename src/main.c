@@ -5,11 +5,9 @@
 
 #include "display.h"
 #include "vector.h"
+#include "mesh.h"
 
-#define NUM_POINTS 9 * 9 * 9
-vec3_t g_CubePoints[NUM_POINTS];
-
-vec2_t g_ProjectedPoints[NUM_POINTS];
+triangle_t g_TrianglesToRender[NUM_MESH_FACES];
 
 bool g_IsRunning = false;
 
@@ -27,20 +25,6 @@ void setup(void)
 											 SDL_PIXELFORMAT_ARGB8888,
 											 SDL_TEXTUREACCESS_STREAMING,
 											 g_WindowWidth, g_WindowHeight);
-
-	int point_count = 0;
-	for (float x = -1; x <= 1; x += 0.25f)
-	{
-		for (float y = -1; y <= 1; y += 0.25f)
-		{
-			for (float z = -1; z <= 1; z += 0.25f)
-			{
-				vec3_t point = { .x = x, .y = y, .z = z };
-				g_CubePoints[point_count++] = point;
-			}
-		}
-	}
-
 }
 
 void process_input(void)
@@ -82,18 +66,39 @@ void update(void)
 	g_CubeRotation.y += 0.01f;
 	g_CubeRotation.z += 0.01f;
 
-	for (int i = 0; i < NUM_POINTS; i++)
+	for (int i = 0; i < NUM_MESH_FACES; i++)
 	{
-		vec3_t point = g_CubePoints[i];
-		
-		vec3_t rotated_point = vec3_rotate_x(point, g_CubeRotation.x);
-		rotated_point = vec3_rotate_y(rotated_point, g_CubeRotation.y);
-		rotated_point = vec3_rotate_z(rotated_point, g_CubeRotation.z);
-		
-		rotated_point.z -= g_CameraPos.z;
+		face_t mesh_face = g_MeshFaces[i];
 
-		vec2_t projected_point = project(rotated_point);
-		g_ProjectedPoints[i] = projected_point;
+		vec3_t face_vertices[3];
+
+		face_vertices[0] = g_MeshVertices[mesh_face.a - 1];
+		face_vertices[1] = g_MeshVertices[mesh_face.b - 1];
+		face_vertices[2] = g_MeshVertices[mesh_face.c - 1];
+
+		triangle_t projected_triangle;
+
+		for (int j = 0; j < 3; j++)
+		{
+			vec3_t transformed_vertex = face_vertices[j];
+
+			transformed_vertex = vec3_rotate_x(transformed_vertex, g_CubeRotation.x);
+			transformed_vertex = vec3_rotate_y(transformed_vertex, g_CubeRotation.y);
+			transformed_vertex = vec3_rotate_z(transformed_vertex, g_CubeRotation.z);
+
+			// Shift point away from camera
+			transformed_vertex.z -= g_CameraPos.z;
+
+			vec2_t projected_point = project(transformed_vertex);
+
+			// Shift point to middle of screen
+			projected_point.x += (g_WindowWidth / 2);
+			projected_point.y += (g_WindowHeight / 2);
+
+			projected_triangle.points[j] = projected_point;
+		}
+
+		g_TrianglesToRender[i] = projected_triangle;
 	}
 }
 
@@ -101,13 +106,13 @@ void render(void)
 {
 	draw_grid();
 
-	for (int i = 0; i < NUM_POINTS; i++)
+	for (int i = 0; i < NUM_MESH_FACES; i++)
 	{
-		vec2_t p = g_ProjectedPoints[i];
-		draw_rect(p.x + (g_WindowWidth / 2),
-				  p.y + (g_WindowHeight / 2),
-				  4, 4,
-				  0xFFFFFF00);
+		triangle_t triangle = g_TrianglesToRender[i];
+
+		draw_rect(triangle.points[0].x, triangle.points[0].y, 3, 3, 0xFFFFFF00);
+		draw_rect(triangle.points[1].x, triangle.points[1].y, 3, 3, 0xFFFFFF00);
+		draw_rect(triangle.points[2].x, triangle.points[2].y, 3, 3, 0xFFFFFF00);
 	}
 
 	render_color_buffer();

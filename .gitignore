@@ -1,3 +1,7 @@
 *.vcxproj
 *.vcxproj.*
+*.dll
+*.obj
+*.pdb
+.vscode
 x64
